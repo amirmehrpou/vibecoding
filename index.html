@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>گردونه شانس — Pixel Perfect</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      font-family: "Vazirmatn", Tahoma, sans-serif;
+      background: radial-gradient(ellipse at 50% 0%, #1a2040 0%, #0b0e18 55%, #060810 100%);
+      color: #fff; padding: 24px;
+    }
+    .card {
+      width: 340px; padding: 36px 28px 32px;
+      background: linear-gradient(160deg, #12151f 0%, #0c0e14 100%);
+      border-radius: 20px;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04);
+      display: flex; flex-direction: column; align-items: center; gap: 24px;
+    }
+    .wheel-area {
+      position: relative;
+      width: 280px; height: 280px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pointer {
+      position: absolute; top: -4px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      filter:
+        drop-shadow(0 0 6px rgba(255, 55, 80, 0.95))
+        drop-shadow(0 0 14px rgba(255, 40, 65, 0.75))
+        drop-shadow(0 0 28px rgba(255, 30, 55, 0.45));
+    }
+    svg { display: block; overflow: visible; }
+    .spin-btn {
+      appearance: none; cursor: pointer;
+      font-family: inherit; font-size: 19px; font-weight: 800; color: #fff;
+      background: linear-gradient(180deg, #e8243c 0%, #b50e24 100%);
+      width: 190px;
+      padding: 13px 0;
+      border-radius: 10px;
+      border: 2px solid rgba(255,80,100,0.8);
+      box-shadow:
+        0 0 14px rgba(255,45,74,0.9),
+        0 0 30px rgba(255,45,74,0.45),
+        0 0 60px rgba(255,45,74,0.2),
+        inset 0 1px 0 rgba(255,160,170,0.15),
+        0 3px 10px rgba(0,0,0,0.5);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      letter-spacing: 0.02em;
+    }
+    .spin-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow:
+        0 0 20px rgba(255,45,74,1),
+        0 0 45px rgba(255,45,74,0.55),
+        0 0 80px rgba(255,45,74,0.25),
+        inset 0 1px 0 rgba(255,160,170,0.15),
+        0 5px 14px rgba(0,0,0,0.5);
+    }
+    .spin-btn:disabled { opacity: 0.6; cursor: default; }
+  </style>
+</head>
+<body>
+<main class="card">
+  <div class="wheel-area">
+    <!-- pointer arrow -->
+    <svg class="pointer" width="26" height="22" viewBox="0 0 26 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <filter id="pointerBloom" x="-120%" y="-120%" width="340%" height="340%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="2.2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <!-- outer neon bloom -->
+      <polygon
+        points="13,20 1,2 25,2"
+        fill="none"
+        stroke="#ff3d58"
+        stroke-width="3.5"
+        stroke-linejoin="round"
+        stroke-linecap="round"
+        opacity="0.55"
+        filter="url(#pointerBloom)"
+      />
+      <!-- dark translucent interior -->
+      <polygon
+        points="13,20 1,2 25,2"
+        fill="rgba(70, 4, 14, 0.72)"
+        stroke="none"
+      />
+      <!-- hot red tube -->
+      <polygon
+        points="13,20 1,2 25,2"
+        fill="none"
+        stroke="#ff2d4a"
+        stroke-width="2"
+        stroke-linejoin="round"
+        stroke-linecap="round"
+      />
+      <!-- pale core highlight (neon tube center line) -->
+      <polygon
+        points="13,20 1,2 25,2"
+        fill="none"
+        stroke="#ffd4dc"
+        stroke-width="0.75"
+        stroke-linejoin="round"
+        stroke-linecap="round"
+        opacity="0.9"
+      />
+    </svg>
+
+    <svg id="svg" width="280" height="280" viewBox="0 0 280 280">
+      <defs>
+        <filter id="neon" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="neon-strong" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+
+        <!-- Clip to inner wheel edge (inside the rim band) -->
+        <clipPath id="clipInner"><circle cx="140" cy="140" r="118"/></clipPath>
+
+        <!-- Hub 3D gradient -->
+        <radialGradient id="hubGrad" cx="38%" cy="32%" r="65%">
+          <stop offset="0%"   stop-color="#555"/>
+          <stop offset="30%"  stop-color="#1e1e1e"/>
+          <stop offset="100%" stop-color="#050505"/>
+        </radialGradient>
+
+        <!-- Rim band gradient: dark metallic annular area between r=112 and r=128 -->
+        <radialGradient id="rimGrad" cx="50%" cy="50%" r="50%" gradientUnits="objectBoundingBox">
+          <stop offset="0%"   stop-color="#2a2a2a"/>
+          <stop offset="60%"  stop-color="#111"/>
+          <stop offset="100%" stop-color="#0a0a0a"/>
+        </radialGradient>
+        <clipPath id="sc1"><path id="scp1"/></clipPath>
+        <clipPath id="sc2"><path id="scp2"/></clipPath>
+        <clipPath id="sc3"><path id="scp3"/></clipPath>
+        <clipPath id="sc4"><path id="scp4"/></clipPath>
+        <clipPath id="sc5"><path id="scp5"/></clipPath>
+      </defs>
+
+      <!-- ── Outer metallic rim band (between outer ring r=128 and inner wheel r=112) ── -->
+      <!-- Fill the full outer circle dark first -->
+      <circle cx="140" cy="140" r="130" fill="#111"/>
+      <!-- Then cut out with a slightly lighter annular ring to give rim depth -->
+      <!-- Rim band ring: drawn as annulus using two circles via mask -->
+      <circle cx="140" cy="140" r="128" fill="#1a1a1a"/>
+      <circle cx="140" cy="140" r="122" fill="#0d0d0d"/>
+      <circle cx="140" cy="140" r="118" fill="#0a0a0a"/>
+
+      <!-- Subtle rim highlight at top (light catches the bevel) -->
+      <path d="M 140 12 A 128 128 0 0 1 268 140" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="8"/>
+
+      <!-- ── Inner wheel slices (clipped to r=112) ── -->
+      <g id="slices" clip-path="url(#clipInner)"></g>
+
+      <!-- Divider lines (clipped) -->
+      <g id="dividers" clip-path="url(#clipInner)"
+         stroke="#ff2d4a" stroke-width="1" stroke-linecap="round" filter="url(#neon)"></g>
+
+      <!-- ── Hub ── -->
+      <circle cx="140" cy="140" r="24" fill="url(#hubGrad)"/>
+      <circle cx="140" cy="140" r="24" fill="none" stroke="#ff2d4a" stroke-width="1.5" filter="url(#neon)"/>
+      <!-- hub inner shadow for depth -->
+      <circle cx="140" cy="140" r="20" fill="none" stroke="rgba(0,0,0,0.7)" stroke-width="3"/>
+      <!-- hub glint -->
+      <ellipse cx="135" cy="134" rx="5" ry="4" fill="rgba(255,255,255,0.07)"/>
+
+      <!-- ── Labels ── -->
+      <g id="labels" font-family="Vazirmatn, Tahoma, sans-serif" text-anchor="middle"></g>
+
+      <!-- ── Inner ring (bright neon, just inside the rim) ── -->
+      <circle cx="140" cy="140" r="118"
+        fill="none" stroke="#ff2d4a" stroke-width="1.5" filter="url(#neon)"/>
+
+      <!-- ── Outer ring ── -->
+      <circle cx="140" cy="140" r="128"
+        fill="none" stroke="#ff2d4a" stroke-width="2" filter="url(#neon)"/>
+    </svg>
+    <!-- Label canvas: labels orbit with segments; text stays horizontal -->
+    <canvas id="labelCanvas" width="280" height="280"
+      style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
+  </div>
+  <button class="spin-btn" id="spinBtn">چرخوندن</button>
+</main>
+
+<script>
+  const CX = 140, CY = 140;
+  const OR = 118;   // inner wheel radius (slices live here)
+  const HUB_R = 24;
+  const LR = 70;    // label radius
+  const N = 6;
+  const TAU = Math.PI * 2;
+  const NS = "http://www.w3.org/2000/svg";
+
+  const SEGS = [
+    { num: "۱",    sub: ["میلیون تومان", "جایزه"], prize: true  },
+    { num: null,   sub: ["پوچ"],                    prize: false },
+    { num: "۱۰",  sub: ["میلیون تومان", "جایزه"], prize: true  },
+    { num: null,   sub: ["پوچ"],                    prize: false },
+    { num: "۱۰۰", sub: ["میلیون تومان", "جایزه"], prize: true  },
+    { num: null,   sub: ["پوچ"],                    prize: false },
+  ];
+
+  function mkEl(tag, attrs) {
+    const e = document.createElementNS(NS, tag);
+    Object.entries(attrs).forEach(([k,v]) => e.setAttribute(k, v));
+    return e;
+  }
+  function pt(a, r) { return [CX + r*Math.cos(a), CY + r*Math.sin(a)]; }
+
+  // Slice fills — uniform very dark (all same in reference)
+  const sliceEls = SEGS.map(s => {
+    const p = mkEl("path", { fill: "#0c0c0c" });
+    document.getElementById("slices").appendChild(p);
+    return p;
+  });
+
+  // Divider lines
+  const divEls = Array.from({length: N}, () => {
+    const l = mkEl("line", {});
+    document.getElementById("dividers").appendChild(l);
+    return l;
+  });
+
+  // Canvas for horizontal labels
+  const lCanvas = document.getElementById("labelCanvas");
+  const lCtx = lCanvas.getContext("2d");
+
+  const LABEL_BASE = -Math.PI / 2 - Math.PI / N;
+
+  // Position follows wheel rotation; glyphs are never rotated (always horizontal).
+  function drawLabels(rot) {
+    lCtx.clearRect(0, 0, lCanvas.width, lCanvas.height);
+    const slice = TAU / N;
+    for (let i = 0; i < N; i++) {
+      const sa = rot + i * slice;
+      const ea = sa + slice;
+      const ma = sa + slice / 2;
+      const [lx, ly] = pt(ma, LR);
+      const seg = SEGS[i];
+
+      lCtx.save();
+      lCtx.beginPath();
+      lCtx.moveTo(CX, CY);
+      lCtx.arc(CX, CY, OR, sa, ea);
+      lCtx.closePath();
+      lCtx.clip();
+
+      if (seg.prize) {
+        // Big number
+        lCtx.font = "900 24px Vazirmatn, Tahoma, sans-serif";
+        lCtx.fillStyle = "#ffffff";
+        lCtx.textAlign = "center";
+        lCtx.textBaseline = "alphabetic";
+        lCtx.fillText(seg.num, lx, ly - 4);
+        // Subtitle lines
+        lCtx.font = "600 9.5px Vazirmatn, Tahoma, sans-serif";
+        lCtx.fillStyle = "#dddddd";
+        lCtx.textBaseline = "top";
+        lCtx.fillText(seg.sub[0], lx, ly + 10);
+        lCtx.fillText(seg.sub[1], lx, ly + 22);
+      } else {
+        lCtx.font = "700 16px Vazirmatn, Tahoma, sans-serif";
+        lCtx.fillStyle = "#cccccc";
+        lCtx.textAlign = "center";
+        lCtx.textBaseline = "middle";
+        lCtx.fillText(seg.sub[0], lx, ly);
+      }
+
+      lCtx.restore();
+    }
+  }
+
+  let rotation = LABEL_BASE;
+
+  function draw(rot) {
+    const slice = TAU / N;
+    for (let i = 0; i < N; i++) {
+      const sa = rot + i * slice;
+      const ea = sa + slice;
+
+      // Slice path
+      const [x1,y1] = pt(sa, OR);
+      const [x2,y2] = pt(ea, OR);
+      sliceEls[i].setAttribute("d",
+        `M ${CX} ${CY} L ${x1} ${y1} A ${OR} ${OR} 0 0 1 ${x2} ${y2} Z`);
+
+      // Divider from hub to inner ring edge
+      const [ix,iy] = pt(sa, HUB_R);
+      const [ox,oy] = pt(sa, OR);
+      divEls[i].setAttribute("x1", ix); divEls[i].setAttribute("y1", iy);
+      divEls[i].setAttribute("x2", ox); divEls[i].setAttribute("y2", oy);
+
+
+    }
+    drawLabels(rot);
+  }
+
+  draw(rotation);
+
+  const btn = document.getElementById("spinBtn");
+  let spinning = false;
+
+  btn.addEventListener("click", () => {
+    if (spinning) return;
+    spinning = true; btn.disabled = true;
+
+    const prizeIndices = SEGS.map((s,i) => s.prize ? i : -1).filter(i => i >= 0);
+    const winIdx = prizeIndices[Math.floor(Math.random() * prizeIndices.length)];
+    const slice = TAU / N;
+    const targetRot = -Math.PI/2 - winIdx*slice - slice/2;
+    const rawDelta = ((targetRot - rotation) % TAU + TAU) % TAU;
+    const delta = 5 * TAU + rawDelta;
+    const start = rotation, dur = 4000;
+    let t0 = null;
+    const ease = t => 1 - Math.pow(1-t, 3);
+    function frame(ts) {
+      if (!t0) t0 = ts;
+      const t = Math.min((ts-t0)/dur, 1);
+      draw(start + ease(t)*delta);
+      if (t < 1) requestAnimationFrame(frame);
+      else { rotation = targetRot; spinning = false; btn.disabled = false; }
+    }
+    requestAnimationFrame(frame);
+  });
+</script>
+</body>
+</html>
